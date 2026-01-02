@@ -385,11 +385,18 @@ const SightingsPage = () => {
 const HauntingsPage = () => {
   const { isSubscriber } = useAuth();
   const [reports, setReports] = useState([]);
+  const [ads, setAds] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    axios.get(`${API}/hauntings?is_subscriber=${isSubscriber ? 'true' : 'false'}`).then(res => setReports(res.data.reports)).finally(() => setLoading(false));
+    Promise.all([
+      axios.get(`${API}/hauntings?is_subscriber=${isSubscriber ? 'true' : 'false'}`),
+      axios.get(`${API}/ads/rotation?page=hauntings`)
+    ]).then(([reportsRes, adsRes]) => {
+      setReports(reportsRes.data.reports);
+      setAds(adsRes.data.ads);
+    }).finally(() => setLoading(false));
   }, [isSubscriber]);
 
   return (
@@ -419,34 +426,46 @@ const HauntingsPage = () => {
           </div>
         )}
 
-        {loading ? (
-          <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div></div>
-        ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {reports.map(report => (
-              <div key={report.id} onClick={() => navigate(`/haunting/${report.id}`)} className="bg-gray-800/50 border border-red-500/20 rounded-xl p-5 hover:border-red-500/50 cursor-pointer relative">
-                {report.preview && (
-                  <div className="absolute top-2 right-2 bg-yellow-500/20 text-yellow-400 text-xs px-2 py-1 rounded-full">🔒 Preview</div>
-                )}
-                <div className="flex items-center gap-2 mb-3">
-                  <SeverityBadge severity={report.severity_assessment?.overall_severity || 'Unknown'} />
-                  <span className="text-gray-500 text-sm">{report.haunting_type}</span>
-                </div>
-                {!report.preview ? (
-                  <>
-                    <p className="text-gray-400 text-sm mb-3 line-clamp-2">{report.activity_description}</p>
-                    <div className="text-gray-500 text-xs">
-                      📍 {report.location?.address || `${report.location?.latitude?.toFixed(2)}, ${report.location?.longitude?.toFixed(2)}`}
+        <div className="flex gap-6">
+          {/* Main Content */}
+          <div className="flex-1">
+            {loading ? (
+              <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div></div>
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {reports.map(report => (
+                  <div key={report.id} onClick={() => navigate(`/haunting/${report.id}`)} className="bg-gray-800/50 border border-red-500/20 rounded-xl p-5 hover:border-red-500/50 cursor-pointer relative">
+                    {report.preview && (
+                      <div className="absolute top-2 right-2 bg-yellow-500/20 text-yellow-400 text-xs px-2 py-1 rounded-full">🔒 Preview</div>
+                    )}
+                    <div className="flex items-center gap-2 mb-3">
+                      <SeverityBadge severity={report.severity_assessment?.overall_severity || 'Unknown'} />
+                      <span className="text-gray-500 text-sm">{report.haunting_type}</span>
                     </div>
-                  </>
-                ) : (
-                  <p className="text-gray-500 text-sm">{report.message}</p>
-                )}
-                <div className="text-gray-600 text-xs mt-2">{new Date(report.created_at).toLocaleDateString()}</div>
+                    {!report.preview ? (
+                      <>
+                        <p className="text-gray-400 text-sm mb-3 line-clamp-2">{report.activity_description}</p>
+                        <div className="text-gray-500 text-xs">
+                          📍 {report.location?.address || `${report.location?.latitude?.toFixed(2)}, ${report.location?.longitude?.toFixed(2)}`}
+                        </div>
+                      </>
+                    ) : (
+                      <p className="text-gray-500 text-sm">{report.message}</p>
+                    )}
+                    <div className="text-gray-600 text-xs mt-2">{new Date(report.created_at).toLocaleDateString()}</div>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
-        )}
+
+          {/* Sidebar with Ads */}
+          {ads.length > 0 && (
+            <div className="hidden lg:block w-72 shrink-0">
+              <VideoAdPlayer ads={ads} autoRotate={true} />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
