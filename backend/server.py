@@ -1084,6 +1084,336 @@ async def get_revenue_stats():
         "total_donations_gbp": total_donations / 100
     }
 
+# ============== VIDEO ADVERTISING ROUTES ==============
+
+@api_router.get("/ads/pricing")
+async def get_ad_pricing():
+    return {
+        "plans": [
+            {"id": "weekly", "name": "Weekly", "price_gbp": 50, "price_pence": 5000, "duration_days": 7},
+            {"id": "monthly", "name": "Monthly", "price_gbp": 150, "price_pence": 15000, "duration_days": 30},
+            {"id": "quarterly", "name": "Quarterly", "price_gbp": 350, "price_pence": 35000, "duration_days": 90}
+        ],
+        "categories": AD_CATEGORIES,
+        "max_video_duration_seconds": 20,
+        "supported_formats": ["mp4", "webm", "mov"]
+    }
+
+@api_router.post("/ads", response_model=VideoAd)
+async def create_video_ad(ad_data: VideoAdCreate):
+    if ad_data.category not in AD_CATEGORIES:
+        raise HTTPException(status_code=400, detail="Invalid category")
+    
+    # Calculate duration
+    duration_days = {"weekly": 7, "monthly": 30, "quarterly": 90}.get(ad_data.plan, 30)
+    amount = VIDEO_AD_PRICES.get(ad_data.plan, 15000)
+    start_date = datetime.now(timezone.utc)
+    end_date = start_date + timedelta(days=duration_days)
+    
+    ad = VideoAd(
+        **ad_data.model_dump(),
+        amount_paid_gbp=amount,
+        start_date=start_date,
+        end_date=end_date,
+        status="pending"
+    )
+    
+    doc = ad.model_dump()
+    doc['start_date'] = doc['start_date'].isoformat()
+    doc['end_date'] = doc['end_date'].isoformat()
+    doc['created_at'] = doc['created_at'].isoformat()
+    doc['updated_at'] = doc['updated_at'].isoformat()
+    
+    await db.video_ads.insert_one(doc)
+    return ad
+
+@api_router.get("/ads")
+async def get_video_ads(
+    status: Optional[str] = None,
+    category: Optional[str] = None,
+    active_only: bool = True,
+    limit: int = 10
+):
+    query = {}
+    if active_only:
+        query['status'] = 'active'
+        query['approved'] = True
+        query['end_date'] = {"$gt": datetime.now(timezone.utc).isoformat()}
+    elif status:
+        query['status'] = status
+    if category:
+        query['category'] = category
+    
+    cursor = db.video_ads.find(query, {"_id": 0}).limit(limit)
+    ads = await cursor.to_list(limit)
+    return {"ads": [convert_doc_dates(a) for a in ads], "count": len(ads)}
+
+@api_router.get("/ads/rotation")
+async def get_ads_for_rotation(page: Optional[str] = None, limit: int = 5):
+    """Get active ads for rotation display"""
+    query = {
+        'status': 'active',
+        'approved': True,
+        'end_date': {"$gt": datetime.now(timezone.utc).isoformat()}
+    }
+    if page:
+        query['$or'] = [{'target_pages': page}, {'target_pages': {"$size": 0}}]
+    
+    cursor = db.video_ads.find(query, {"_id": 0}).limit(limit)
+    ads = await cursor.to_list(limit)
+    return {"ads": [convert_doc_dates(a) for a in ads]}
+
+@api_router.post("/ads/{ad_id}/impression")
+async def record_ad_impression(ad_id: str):
+    result = await db.video_ads.update_one({"id": ad_id}, {"$inc": {"impressions": 1}})
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Ad not found")
+    return {"message": "Impression recorded"}
+
+@api_router.post("/ads/{ad_id}/click")
+async def record_ad_click(ad_id: str):
+    result = await db.video_ads.update_one({"id": ad_id}, {"$inc": {"clicks": 1}})
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Ad not found")
+    ad = await db.video_ads.find_one({"id": ad_id}, {"_id": 0})
+    return {"click_url": ad.get('click_url', ''), "message": "Click recorded"}
+
+@api_router.put("/ads/{ad_id}/approve")
+async def approve_video_ad(ad_id: str, approved: bool = True):
+    update = {
+        "approved": approved,
+        "status": "active" if approved else "rejected",
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    result = await db.video_ads.update_one({"id": ad_id}, {"$set": update})
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Ad not found")
+    ad = await db.video_ads.find_one({"id": ad_id}, {"_id": 0})
+    return convert_doc_dates(ad)
+
+@api_router.get("/ads/{ad_id}")
+async def get_video_ad(ad_id: str):
+    ad = await db.video_ads.find_one({"id": ad_id}, {"_id": 0})
+    if not ad:
+        raise HTTPException(status_code=404, detail="Ad not found")
+    return convert_doc_dates(ad)
+
+# ============== AI REPORT GENERATOR ROUTES ==============
+
+@api_router.post("/ai/generate-report", response_model=AIGeneratedReport)
+async def generate_ai_report(request: AIReportRequest):
+    """
+    Takes raw text input and uses AI to generate a structured paranormal report.
+    Extracts locations, dates, entities, and provides analysis.
+    """
+    try:
+        prompt = f"""You are an expert paranormal researcher. Analyze the following raw information and create a structured paranormal report.
+
+RAW INPUT:
+{request.raw_text}
+
+Extract and generate the following in a structured format:
+
+1. TITLE: A compelling title for this report
+2. CATEGORY: One of [Ghost/Spirit, UFO/UAP, Cryptid, Poltergeist, Shadow Figure, Orb, EVP/Audio, Unexplained Phenomenon, Other]
+3. HAUNTING_TYPE: If applicable, one of [Residual Haunting, Intelligent Haunting, Poltergeist Activity, Demonic/Negative Entity, Shadow People, Portal Haunting, Object Attachment, Land/Location Based, Other] or "N/A"
+4. SUMMARY: A 2-3 sentence summary of the incident
+5. DETAILED_DESCRIPTION: A comprehensive narrative of the events (3-5 paragraphs)
+6. LOCATIONS: Extract any locations mentioned as "lat,lng,address" format (one per line). If no specific coordinates, estimate based on place names. Use UK coordinates by default if unclear.
+7. DATES: List any dates or time periods mentioned
+8. WITNESSES: Estimated number of witnesses
+9. ENTITIES: List any paranormal entities or phenomena described
+10. CREDIBILITY: Assessment of credibility (Low/Medium/High) with brief explanation
+11. SEVERITY: If haunting, rate severity (Low/Moderate/High/Severe/Critical)
+12. KEY_EVIDENCE: List key pieces of evidence mentioned
+13. RECOMMENDATIONS: Investigation recommendations
+14. SIMILAR_CASES: Known similar historical cases
+
+Format your response exactly as:
+TITLE: [title]
+CATEGORY: [category]
+HAUNTING_TYPE: [type or N/A]
+SUMMARY: [summary]
+DETAILED_DESCRIPTION: [description]
+LOCATIONS: [location1] | [location2]
+DATES: [date1] | [date2]
+WITNESSES: [number]
+ENTITIES: [entity1] | [entity2]
+CREDIBILITY: [assessment]
+SEVERITY: [severity or N/A]
+KEY_EVIDENCE: [evidence1] | [evidence2]
+RECOMMENDATIONS: [rec1] | [rec2]
+SIMILAR_CASES: [case1] | [case2]"""
+
+        response = openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=2000,
+            temperature=0.7
+        )
+        
+        result = response.choices[0].message.content
+        lines = result.strip().split('\n')
+        
+        # Parse response
+        parsed = {}
+        current_key = None
+        for line in lines:
+            for key in ['TITLE:', 'CATEGORY:', 'HAUNTING_TYPE:', 'SUMMARY:', 'DETAILED_DESCRIPTION:', 
+                       'LOCATIONS:', 'DATES:', 'WITNESSES:', 'ENTITIES:', 'CREDIBILITY:', 
+                       'SEVERITY:', 'KEY_EVIDENCE:', 'RECOMMENDATIONS:', 'SIMILAR_CASES:']:
+                if line.startswith(key):
+                    current_key = key[:-1].lower()
+                    parsed[current_key] = line[len(key):].strip()
+                    break
+        
+        # Process locations
+        locations = []
+        if parsed.get('locations'):
+            for loc_str in parsed['locations'].split('|'):
+                loc_str = loc_str.strip()
+                if loc_str and loc_str != 'N/A':
+                    parts = loc_str.split(',')
+                    if len(parts) >= 2:
+                        try:
+                            lat = float(parts[0].strip())
+                            lng = float(parts[1].strip())
+                            address = ','.join(parts[2:]).strip() if len(parts) > 2 else None
+                            locations.append(Location(latitude=lat, longitude=lng, address=address))
+                        except:
+                            # If can't parse coordinates, create with default UK location
+                            locations.append(Location(latitude=51.5074, longitude=-0.1278, address=loc_str))
+        
+        # Build report
+        report = AIGeneratedReport(
+            raw_input=request.raw_text,
+            input_type="text",
+            title=parsed.get('title', 'Untitled Report'),
+            summary=parsed.get('summary', ''),
+            detailed_description=parsed.get('detailed_description', request.raw_text),
+            category=parsed.get('category', 'Other'),
+            haunting_type=parsed.get('haunting_type') if parsed.get('haunting_type') != 'N/A' else None,
+            locations=locations,
+            dates_mentioned=[d.strip() for d in parsed.get('dates', '').split('|') if d.strip() and d.strip() != 'N/A'],
+            witnesses_mentioned=int(parsed.get('witnesses', '1').split()[0]) if parsed.get('witnesses', '').split() else 1,
+            entities_described=[e.strip() for e in parsed.get('entities', '').split('|') if e.strip() and e.strip() != 'N/A'],
+            credibility_assessment=parsed.get('credibility', 'Medium - Requires investigation'),
+            severity_assessment=parsed.get('severity') if parsed.get('severity') != 'N/A' else None,
+            key_evidence=[e.strip() for e in parsed.get('key_evidence', '').split('|') if e.strip()],
+            investigation_recommendations=[r.strip() for r in parsed.get('recommendations', '').split('|') if r.strip()],
+            similar_cases=[c.strip() for c in parsed.get('similar_cases', '').split('|') if c.strip()],
+            suggested_images=[],
+            audio_transcriptions=[]
+        )
+        
+        # Save to database
+        doc = report.model_dump()
+        doc['generated_at'] = doc['generated_at'].isoformat()
+        await db.ai_reports.insert_one(doc)
+        
+        return report
+        
+    except Exception as e:
+        logger.error(f"AI report generation failed: {e}")
+        # Return a basic report
+        return AIGeneratedReport(
+            raw_input=request.raw_text,
+            input_type="text",
+            title="Report from Submitted Information",
+            summary="AI analysis unavailable. Please review the raw input below.",
+            detailed_description=request.raw_text,
+            category="Other",
+            credibility_assessment="Unable to assess - manual review required",
+            locations=[],
+            dates_mentioned=[],
+            witnesses_mentioned=1,
+            entities_described=[],
+            key_evidence=[],
+            investigation_recommendations=["Review the submitted information manually", "Contact witnesses if possible", "Document any additional details"],
+            similar_cases=[]
+        )
+
+@api_router.post("/ai/generate-report/convert-to-sighting")
+async def convert_ai_report_to_sighting(report_id: str):
+    """Convert an AI-generated report into a formal sighting submission"""
+    report = await db.ai_reports.find_one({"id": report_id}, {"_id": 0})
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+    
+    # Create sighting from report
+    location = report['locations'][0] if report.get('locations') else {"latitude": 51.5074, "longitude": -0.1278}
+    
+    sighting_data = SightingCreate(
+        title=report['title'],
+        description=report['detailed_description'],
+        category=report['category'],
+        location=Location(**location) if isinstance(location, dict) else location,
+        date_occurred=datetime.now(timezone.utc),
+        witness_count=report.get('witnesses_mentioned', 1)
+    )
+    
+    # Create the sighting
+    sighting = Sighting(**sighting_data.model_dump())
+    sighting.ai_analysis = await perform_ai_analysis(sighting)
+    
+    doc = sighting.model_dump()
+    for key in ['date_occurred', 'created_at', 'updated_at']:
+        doc[key] = doc[key].isoformat()
+    if doc['ai_analysis']:
+        doc['ai_analysis']['timestamp'] = doc['ai_analysis']['timestamp'].isoformat()
+    
+    await db.sightings.insert_one(doc)
+    return {"message": "Sighting created from report", "sighting_id": sighting.id}
+
+@api_router.post("/ai/generate-report/convert-to-haunting")
+async def convert_ai_report_to_haunting(report_id: str, reporter_name: str, reporter_email: str):
+    """Convert an AI-generated report into a formal haunting submission"""
+    report = await db.ai_reports.find_one({"id": report_id}, {"_id": 0})
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+    
+    location = report['locations'][0] if report.get('locations') else {"latitude": 51.5074, "longitude": -0.1278}
+    
+    haunting_data = HauntingReportCreate(
+        property_type="Other",
+        location=Location(**location) if isinstance(location, dict) else location,
+        haunting_type=report.get('haunting_type') or "Other",
+        activity_description=report['detailed_description'],
+        frequency="Occasional",
+        duration_months=1,
+        witnesses=report.get('witnesses_mentioned', 1),
+        reporter_name=reporter_name,
+        reporter_email=reporter_email,
+        visibility="subscribers",
+        seeking_help=True
+    )
+    
+    haunting = HauntingReport(**haunting_data.model_dump())
+    haunting.severity_assessment = await perform_haunting_severity_assessment(haunting_data)
+    
+    doc = haunting.model_dump()
+    for key in ['created_at', 'updated_at']:
+        doc[key] = doc[key].isoformat()
+    if doc['severity_assessment']:
+        doc['severity_assessment']['timestamp'] = doc['severity_assessment']['timestamp'].isoformat()
+    
+    await db.haunting_reports.insert_one(doc)
+    return {"message": "Haunting report created from AI report", "haunting_id": haunting.id}
+
+@api_router.get("/ai/reports")
+async def get_ai_reports(limit: int = 20, skip: int = 0):
+    """Get previously generated AI reports"""
+    cursor = db.ai_reports.find({}, {"_id": 0}).skip(skip).limit(limit).sort("generated_at", -1)
+    reports = await cursor.to_list(limit)
+    return {"reports": [convert_doc_dates(r) for r in reports], "count": len(reports)}
+
+@api_router.get("/ai/reports/{report_id}")
+async def get_ai_report(report_id: str):
+    report = await db.ai_reports.find_one({"id": report_id}, {"_id": 0})
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+    return convert_doc_dates(report)
+
 # Include the router
 app.include_router(api_router)
 
