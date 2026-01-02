@@ -2161,7 +2161,7 @@ const AdvertisePage = () => {
           </div>
 
           <button type="submit" disabled={submitting} className="w-full bg-yellow-500 hover:bg-yellow-600 disabled:bg-gray-700 text-black font-bold py-4 rounded-lg text-lg">
-            {submitting ? 'Submitting...' : `Submit Ad - £${pricing?.plans.find(p => p.id === form.plan)?.price_gbp || 150}`}
+            {submitting ? 'Submitting...' : `Submit Ad - £${pricing?.plans.find(p => p.id === form.plan)?.price_gbp || 20}`}
           </button>
         </form>
       </div>
