@@ -2523,33 +2523,71 @@ Paste anything - the AI will extract and analyze it!`}
   );
 };
 
+// Mobile Bottom Navigation
+const MobileBottomNav = () => {
+  const location = window.location.pathname;
+  const navigate = useNavigate();
+  
+  const navItems = [
+    { path: '/', icon: '🏠', label: 'Home' },
+    { path: '/hauntings', icon: '🏚️', label: 'Hauntings' },
+    { path: '/ai-report', icon: '🤖', label: 'AI' },
+    { path: '/map', icon: '🗺️', label: 'Map' },
+    { path: '/pricing', icon: '⭐', label: 'Subscribe' },
+  ];
+
+  return (
+    <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur-md border-t border-purple-500/30 z-50 safe-area-bottom">
+      <div className="flex justify-around items-center py-2 px-2">
+        {navItems.map((item) => (
+          <button
+            key={item.path}
+            onClick={() => navigate(item.path)}
+            className={`flex flex-col items-center justify-center py-1 px-3 rounded-lg transition-colors min-w-[60px] ${
+              location === item.path 
+                ? 'text-purple-400 bg-purple-500/10' 
+                : 'text-gray-400 hover:text-gray-200'
+            }`}
+          >
+            <span className="text-xl mb-0.5">{item.icon}</span>
+            <span className="text-[10px] font-medium">{item.label}</span>
+          </button>
+        ))}
+      </div>
+    </nav>
+  );
+};
+
 function App() {
   return (
     <AuthProvider>
-      <div className="App">
+      <div className="App pb-16 lg:pb-0">
         <Toaster position="top-right" richColors />
         <BrowserRouter>
           <Navbar />
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/sightings" element={<SightingsPage />} />
-            <Route path="/sightings/report" element={<SightingReportForm />} />
-            <Route path="/sighting/:id" element={<SightingDetailPage />} />
-            <Route path="/hauntings" element={<HauntingsPage />} />
-            <Route path="/hauntings/report" element={<HauntingReportForm />} />
-            <Route path="/haunting/:id" element={<HauntingDetailPage />} />
-            <Route path="/investigators" element={<InvestigatorsPage />} />
-            <Route path="/investigators/register" element={<InvestigatorRegisterForm />} />
-            <Route path="/investigator/:id" element={<InvestigatorDetailPage />} />
-            <Route path="/equipment" element={<EquipmentPage />} />
-            <Route path="/equipment/review" element={<EquipmentReviewForm />} />
-            <Route path="/pricing" element={<PricingPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/map" element={<MapPage />} />
-            <Route path="/advertise" element={<AdvertisePage />} />
-            <Route path="/ai-report" element={<AIReportGeneratorPage />} />
-          </Routes>
+          <main className="min-h-screen">
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/sightings" element={<SightingsPage />} />
+              <Route path="/sightings/report" element={<SightingReportForm />} />
+              <Route path="/sighting/:id" element={<SightingDetailPage />} />
+              <Route path="/hauntings" element={<HauntingsPage />} />
+              <Route path="/hauntings/report" element={<HauntingReportForm />} />
+              <Route path="/haunting/:id" element={<HauntingDetailPage />} />
+              <Route path="/investigators" element={<InvestigatorsPage />} />
+              <Route path="/investigators/register" element={<InvestigatorRegisterForm />} />
+              <Route path="/investigator/:id" element={<InvestigatorDetailPage />} />
+              <Route path="/equipment" element={<EquipmentPage />} />
+              <Route path="/equipment/review" element={<EquipmentReviewForm />} />
+              <Route path="/pricing" element={<PricingPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/map" element={<MapPage />} />
+              <Route path="/advertise" element={<AdvertisePage />} />
+              <Route path="/ai-report" element={<AIReportGeneratorPage />} />
+            </Routes>
+          </main>
+          <MobileBottomNav />
         </BrowserRouter>
       </div>
     </AuthProvider>
