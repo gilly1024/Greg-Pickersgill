@@ -396,6 +396,67 @@ class EquipmentReviewCreate(BaseModel):
     recommended: bool = True
     use_cases: List[str] = []
 
+# ============== EQUIPMENT MARKETPLACE MODELS ==============
+
+class EquipmentListing(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    # Seller info
+    seller_name: str
+    seller_email: str
+    seller_phone: Optional[str] = None
+    seller_location: Optional[Location] = None
+    # Equipment details
+    title: str
+    description: str
+    category: str
+    condition: str
+    listing_type: str  # For Sale, For Hire, Wanted, Swap
+    # Pricing
+    price_gbp: Optional[int] = None  # in pence, None for "Contact for price"
+    price_negotiable: bool = True
+    hire_rate: Optional[str] = None  # e.g., "£20/day", "£50/weekend"
+    # Media
+    images: List[str] = []  # Base64 or URLs
+    videos: List[str] = []
+    # Listing plan
+    listing_plan: str = "basic"  # basic, featured, premium
+    listing_fee_paid: int = 0
+    # Status & dates
+    status: str = "active"  # active, sold, expired, removed
+    featured: bool = False
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    expires_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc) + timedelta(days=30))
+    # Stats
+    views: int = 0
+    enquiries: int = 0
+
+class EquipmentListingCreate(BaseModel):
+    seller_name: str
+    seller_email: str
+    seller_phone: Optional[str] = None
+    seller_location: Optional[Location] = None
+    title: str
+    description: str
+    category: str
+    condition: str
+    listing_type: str
+    price_gbp: Optional[int] = None
+    price_negotiable: bool = True
+    hire_rate: Optional[str] = None
+    images: List[str] = []
+    videos: List[str] = []
+    listing_plan: str = "basic"
+
+class EquipmentEnquiry(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    listing_id: str
+    enquirer_name: str
+    enquirer_email: str
+    enquirer_phone: Optional[str] = None
+    message: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 # ============== SUBSCRIPTION MODELS ==============
 
 class Subscription(BaseModel):
