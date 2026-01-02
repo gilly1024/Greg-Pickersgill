@@ -2087,13 +2087,6 @@ const AdvertisePage = () => {
             </div>
           </>
         )}
-                  <div className="mt-2 text-yellow-400 text-sm">✓ Selected</div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-
         {/* Ad Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6">
