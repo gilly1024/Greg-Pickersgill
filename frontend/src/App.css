@@ -2,13 +2,34 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom styles for Paranormal Investigation App */
+/* ============================================
+   PARAINVESTIGATE - RESPONSIVE STYLES
+   Optimized for: Phones, Tablets, Laptops, Desktops
+   ============================================ */
+
+/* Base App Styles */
 .App {
   min-height: 100vh;
   background-color: #111827;
+  overflow-x: hidden;
 }
 
-/* Line clamp utility */
+/* ============================================
+   RESPONSIVE TYPOGRAPHY
+   ============================================ */
+html {
+  font-size: 16px;
+}
+
+@media (max-width: 640px) {
+  html {
+    font-size: 14px;
+  }
+}
+
+/* ============================================
+   LINE CLAMP UTILITIES
+   ============================================ */
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -16,10 +37,26 @@
   overflow: hidden;
 }
 
-/* Custom scrollbar */
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ============================================
+   CUSTOM SCROLLBAR
+   ============================================ */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
+}
+
+@media (max-width: 768px) {
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
 }
 
 ::-webkit-scrollbar-track {
@@ -36,21 +73,42 @@
   background: #6b7280;
 }
 
-/* Leaflet map fixes */
+/* ============================================
+   LEAFLET MAP RESPONSIVE STYLES
+   ============================================ */
 .leaflet-container {
   background: #1f2937;
   font-family: inherit;
+  width: 100%;
+  height: 100%;
+  min-height: 200px;
+  touch-action: pan-x pan-y;
 }
 
 .leaflet-popup-content-wrapper {
   background: #1f2937;
   border: 1px solid rgba(139, 92, 246, 0.3);
   border-radius: 12px;
+  max-width: 280px;
+}
+
+@media (max-width: 640px) {
+  .leaflet-popup-content-wrapper {
+    max-width: 220px;
+  }
 }
 
 .leaflet-popup-content {
   margin: 12px;
   color: #fff;
+  font-size: 14px;
+}
+
+@media (max-width: 640px) {
+  .leaflet-popup-content {
+    margin: 8px;
+    font-size: 12px;
+  }
 }
 
 .leaflet-popup-tip {
@@ -61,6 +119,18 @@
   background: #374151 !important;
   color: #fff !important;
   border-color: #4b5563 !important;
+  width: 34px !important;
+  height: 34px !important;
+  line-height: 34px !important;
+}
+
+@media (max-width: 640px) {
+  .leaflet-control-zoom a {
+    width: 40px !important;
+    height: 40px !important;
+    line-height: 40px !important;
+    font-size: 18px !important;
+  }
 }
 
 .leaflet-control-zoom a:hover {
@@ -70,41 +140,56 @@
 .leaflet-control-attribution {
   background: rgba(17, 24, 39, 0.8) !important;
   color: #9ca3af !important;
+  font-size: 10px !important;
 }
 
 .leaflet-control-attribution a {
   color: #a78bfa !important;
 }
 
-/* Animation for loading spinner */
+/* ============================================
+   ANIMATIONS
+   ============================================ */
 @keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .animate-spin {
   animation: spin 1s linear infinite;
 }
 
-/* Ghost animation for hero */
 @keyframes float {
-  0%, 100% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
 }
 
 .animate-float {
   animation: float 3s ease-in-out infinite;
 }
 
-/* Gradient text */
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.7); }
+  70% { box-shadow: 0 0 0 20px rgba(139, 92, 246, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0); }
+}
+
+.marker-pulse {
+  animation: pulse 2s infinite;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* ============================================
+   GRADIENT TEXT
+   ============================================ */
 .text-gradient {
   background: linear-gradient(to right, #a78bfa, #ec4899);
   -webkit-background-clip: text;
@@ -112,7 +197,9 @@
   background-clip: text;
 }
 
-/* Card hover effects */
+/* ============================================
+   CARD HOVER EFFECTS
+   ============================================ */
 .card-hover {
   transition: all 0.3s ease;
 }
@@ -122,36 +209,366 @@
   box-shadow: 0 10px 40px rgba(139, 92, 246, 0.2);
 }
 
-/* Input focus styles */
+@media (max-width: 768px) {
+  .card-hover:hover {
+    transform: none;
+  }
+}
+
+/* ============================================
+   FORM ELEMENTS - MOBILE OPTIMIZED
+   ============================================ */
+input, textarea, select {
+  font-size: 16px !important; /* Prevents iOS zoom on focus */
+  -webkit-appearance: none;
+  appearance: none;
+}
+
 input:focus, textarea:focus, select:focus {
   outline: none;
   border-color: #8b5cf6;
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
 }
 
+/* Larger touch targets on mobile */
+@media (max-width: 768px) {
+  input, textarea, select {
+    min-height: 48px;
+    padding: 12px 16px !important;
+  }
+  
+  button {
+    min-height: 48px;
+    padding: 12px 20px;
+  }
+}
+
 /* Button transitions */
 button {
   transition: all 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* Toast customization */
+button:active {
+  transform: scale(0.98);
+}
+
+/* ============================================
+   RESPONSIVE NAVIGATION
+   ============================================ */
+.nav-link {
+  padding: 8px 12px;
+  transition: color 0.2s ease;
+}
+
+@media (max-width: 768px) {
+  .nav-link {
+    padding: 12px 16px;
+    display: block;
+    width: 100%;
+  }
+}
+
+/* Mobile menu animation */
+.mobile-menu {
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================
+   RESPONSIVE GRID HELPERS
+   ============================================ */
+.responsive-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .responsive-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .responsive-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* ============================================
+   MODAL / OVERLAY RESPONSIVE
+   ============================================ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 100;
+}
+
+.modal-content {
+  background: #1f2937;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+@media (max-width: 640px) {
+  .modal-content {
+    border-radius: 16px 16px 0 0;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    max-height: 85vh;
+    max-width: 100%;
+  }
+}
+
+/* ============================================
+   VIDEO AD PLAYER RESPONSIVE
+   ============================================ */
+.video-ad-container {
+  width: 100%;
+  max-width: 320px;
+}
+
+@media (max-width: 1024px) {
+  .video-ad-container {
+    max-width: 100%;
+  }
+}
+
+/* ============================================
+   TOAST CUSTOMIZATION
+   ============================================ */
 [data-sonner-toast] {
   font-family: inherit;
 }
 
-/* Custom marker pulse */
-.marker-pulse {
-  animation: pulse 2s infinite;
+@media (max-width: 640px) {
+  [data-sonner-toaster] {
+    left: 16px !important;
+    right: 16px !important;
+    bottom: 16px !important;
+    top: auto !important;
+  }
 }
 
-@keyframes pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.7);
+/* ============================================
+   SAFE AREA INSETS (for notched phones)
+   ============================================ */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .App {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
   }
-  70% {
-    box-shadow: 0 0 0 20px rgba(139, 92, 246, 0);
+}
+
+/* ============================================
+   STICKY ELEMENTS
+   ============================================ */
+.sticky-nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* ============================================
+   RESPONSIVE SPACING
+   ============================================ */
+.section-padding {
+  padding: 2rem 1rem;
+}
+
+@media (min-width: 640px) {
+  .section-padding {
+    padding: 3rem 1.5rem;
   }
-  100% {
-    box-shadow: 0 0 0 0 rgba(139, 92, 246, 0);
+}
+
+@media (min-width: 1024px) {
+  .section-padding {
+    padding: 4rem 2rem;
+  }
+}
+
+/* ============================================
+   RESPONSIVE FONT SIZES
+   ============================================ */
+.text-hero {
+  font-size: 2rem;
+  line-height: 1.2;
+}
+
+@media (min-width: 640px) {
+  .text-hero {
+    font-size: 2.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .text-hero {
+    font-size: 3.5rem;
+  }
+}
+
+/* ============================================
+   HIDE SCROLLBAR BUT ALLOW SCROLL
+   ============================================ */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* ============================================
+   HORIZONTAL SCROLL CONTAINER
+   ============================================ */
+.horizontal-scroll {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  gap: 1rem;
+  padding-bottom: 1rem;
+}
+
+.horizontal-scroll > * {
+  scroll-snap-align: start;
+  flex-shrink: 0;
+}
+
+/* ============================================
+   SKELETON LOADING
+   ============================================ */
+.skeleton {
+  background: linear-gradient(90deg, #1f2937 25%, #374151 50%, #1f2937 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+}
+
+@keyframes skeleton-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ============================================
+   RESPONSIVE IMAGES
+   ============================================ */
+.responsive-img {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+
+/* ============================================
+   BOTTOM NAVIGATION (MOBILE)
+   ============================================ */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(17, 24, 39, 0.95);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-top: 1px solid rgba(139, 92, 246, 0.2);
+  padding: 8px 0;
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
+  z-index: 50;
+}
+
+/* ============================================
+   PULL TO REFRESH INDICATOR
+   ============================================ */
+.pull-indicator {
+  text-align: center;
+  padding: 12px;
+  color: #9ca3af;
+}
+
+/* ============================================
+   LANDSCAPE MODE ADJUSTMENTS
+   ============================================ */
+@media (max-height: 500px) and (orientation: landscape) {
+  .hero-section {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+  }
+  
+  .modal-content {
+    max-height: 95vh;
+  }
+}
+
+/* ============================================
+   TABLET SPECIFIC (768px - 1024px)
+   ============================================ */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .tablet-grid-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .tablet-hide {
+    display: none;
+  }
+}
+
+/* ============================================
+   DARK MODE ENHANCEMENTS
+   ============================================ */
+@media (prefers-color-scheme: dark) {
+  ::selection {
+    background: rgba(139, 92, 246, 0.4);
+    color: #fff;
+  }
+}
+
+/* ============================================
+   REDUCED MOTION
+   ============================================ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================
+   PRINT STYLES
+   ============================================ */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .App {
+    background: #fff;
+    color: #000;
   }
 }
