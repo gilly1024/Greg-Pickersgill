@@ -360,7 +360,7 @@ const HauntingsPage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    axios.get(`${API}/hauntings?is_subscriber=${isSubscriber}`).then(res => setReports(res.data.reports)).finally(() => setLoading(false));
+    axios.get(`${API}/hauntings?is_subscriber=${isSubscriber ? 'true' : 'false'}`).then(res => setReports(res.data.reports)).finally(() => setLoading(false));
   }, [isSubscriber]);
 
   return (
