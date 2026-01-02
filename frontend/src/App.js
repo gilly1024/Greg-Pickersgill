@@ -2525,8 +2525,14 @@ Paste anything - the AI will extract and analyze it!`}
 
 // Mobile Bottom Navigation
 const MobileBottomNav = () => {
-  const location = window.location.pathname;
   const navigate = useNavigate();
+  const [currentPath, setCurrentPath] = useState(window.location.pathname);
+  
+  useEffect(() => {
+    const handleLocationChange = () => setCurrentPath(window.location.pathname);
+    window.addEventListener('popstate', handleLocationChange);
+    return () => window.removeEventListener('popstate', handleLocationChange);
+  }, []);
   
   const navItems = [
     { path: '/', icon: '🏠', label: 'Home' },
@@ -2536,15 +2542,20 @@ const MobileBottomNav = () => {
     { path: '/pricing', icon: '⭐', label: 'Subscribe' },
   ];
 
+  const handleNav = (path) => {
+    navigate(path);
+    setCurrentPath(path);
+  };
+
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur-md border-t border-purple-500/30 z-50 safe-area-bottom">
+    <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur-md border-t border-purple-500/30 z-50" style={{ paddingBottom: 'max(8px, env(safe-area-inset-bottom))' }}>
       <div className="flex justify-around items-center py-2 px-2">
         {navItems.map((item) => (
           <button
             key={item.path}
-            onClick={() => navigate(item.path)}
+            onClick={() => handleNav(item.path)}
             className={`flex flex-col items-center justify-center py-1 px-3 rounded-lg transition-colors min-w-[60px] ${
-              location === item.path 
+              currentPath === item.path 
                 ? 'text-purple-400 bg-purple-500/10' 
                 : 'text-gray-400 hover:text-gray-200'
             }`}
