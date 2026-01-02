@@ -2415,6 +2415,8 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/map" element={<MapPage />} />
+            <Route path="/advertise" element={<AdvertisePage />} />
+            <Route path="/ai-report" element={<AIReportGeneratorPage />} />
           </Routes>
         </BrowserRouter>
       </div>
