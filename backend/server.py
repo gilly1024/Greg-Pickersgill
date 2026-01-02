@@ -82,6 +82,28 @@ AD_CATEGORIES = [
     "Other"
 ]
 
+# Equipment Marketplace Listing Prices (pence)
+EQUIPMENT_LISTING_PRICES = {
+    "basic": 500,  # £5 for 30 days
+    "featured": 1500,  # £15 for 30 days with featured placement
+    "premium": 3000,  # £30 for 60 days with premium placement
+}
+
+EQUIPMENT_LISTING_TYPES = [
+    "For Sale",
+    "For Hire",
+    "Wanted",
+    "Swap/Exchange"
+]
+
+EQUIPMENT_CONDITIONS = [
+    "Brand New",
+    "Like New",
+    "Good",
+    "Fair",
+    "For Parts/Repair"
+]
+
 # ============== MODELS ==============
 
 class Location(BaseModel):
