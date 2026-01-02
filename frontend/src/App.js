@@ -1303,7 +1303,9 @@ const InvestigatorDetailPage = () => {
 };
 
 const EquipmentPage = () => {
+  const [activeTab, setActiveTab] = useState('reviews');
   const [reviews, setReviews] = useState([]);
+  const [listings, setListings] = useState([]);
   const [categories, setCategories] = useState([]);
   const [filter, setFilter] = useState('');
   const [loading, setLoading] = useState(true);
@@ -1312,58 +1314,155 @@ const EquipmentPage = () => {
   useEffect(() => {
     Promise.all([
       axios.get(`${API}/equipment`),
+      axios.get(`${API}/marketplace/listings`),
       axios.get(`${API}/categories`)
-    ]).then(([reviewsRes, categoriesRes]) => {
+    ]).then(([reviewsRes, listingsRes, categoriesRes]) => {
       setReviews(reviewsRes.data.reviews);
+      setListings(listingsRes.data.listings);
       setCategories(categoriesRes.data.equipment_categories);
     }).finally(() => setLoading(false));
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-900 py-8">
+    <div className="min-h-screen bg-gray-900 py-6 sm:py-8">
       <div className="max-w-7xl mx-auto px-4">
-        <div className="flex flex-wrap items-center justify-between mb-8 gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-white">Equipment Reviews</h1>
-            <p className="text-gray-400">Ghost hunting gear reviewed by investigators</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-white">Equipment</h1>
+            <p className="text-gray-400 text-sm sm:text-base">Reviews & Marketplace for paranormal investigation gear</p>
           </div>
-          <Link to="/equipment/review" className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg">
-            + Write Review
-          </Link>
         </div>
 
-        <select value={filter} onChange={e => setFilter(e.target.value)} className="bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2 mb-6">
-          <option value="">All Categories</option>
-          {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-        </select>
+        {/* Tabs */}
+        <div className="flex gap-2 mb-6 border-b border-gray-700 pb-2">
+          <button
+            onClick={() => setActiveTab('reviews')}
+            className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${activeTab === 'reviews' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}
+          >
+            📝 Reviews
+          </button>
+          <button
+            onClick={() => setActiveTab('marketplace')}
+            className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${activeTab === 'marketplace' ? 'bg-green-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}
+          >
+            🛒 Marketplace
+          </button>
+        </div>
 
-        {loading ? (
-          <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div></div>
-        ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {reviews.filter(r => !filter || r.category === filter).map(review => (
-              <div key={review.id} className="bg-gray-800/50 border border-blue-500/20 rounded-xl p-5 hover:border-blue-500/50 cursor-pointer" onClick={() => navigate(`/equipment/${review.id}`)}>
-                <div className="flex items-start gap-4 mb-3">
-                  <div className="w-16 h-16 bg-gray-700 rounded-lg flex items-center justify-center text-2xl">
-                    {review.image_url ? <img src={review.image_url} alt="" className="w-full h-full rounded-lg object-cover" /> : '🛠️'}
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-white">{review.name}</h3>
-                    <p className="text-gray-500 text-sm">{review.brand}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <StarRating rating={review.rating} size="text-sm" />
-                      {review.recommended && <span className="bg-green-500/20 text-green-400 text-xs px-2 py-0.5 rounded">✓ Recommended</span>}
+        {/* Reviews Tab */}
+        {activeTab === 'reviews' && (
+          <>
+            <div className="flex flex-col sm:flex-row gap-4 mb-6">
+              <select value={filter} onChange={e => setFilter(e.target.value)} className="bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2 flex-1 sm:flex-none">
+                <option value="">All Categories</option>
+                {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+              </select>
+              <Link to="/equipment/review" className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-center">
+                + Write Review
+              </Link>
+            </div>
+
+            {loading ? (
+              <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div></div>
+            ) : (
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                {reviews.filter(r => !filter || r.category === filter).map(review => (
+                  <div key={review.id} className="bg-gray-800/50 border border-blue-500/20 rounded-xl p-4 sm:p-5 hover:border-blue-500/50 cursor-pointer" onClick={() => navigate(`/equipment/${review.id}`)}>
+                    <div className="flex items-start gap-3 sm:gap-4 mb-3">
+                      <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gray-700 rounded-lg flex items-center justify-center text-xl sm:text-2xl shrink-0">
+                        {review.image_url ? <img src={review.image_url} alt="" className="w-full h-full rounded-lg object-cover" /> : '🛠️'}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-base sm:text-lg font-semibold text-white truncate">{review.name}</h3>
+                        <p className="text-gray-500 text-sm">{review.brand}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <StarRating rating={review.rating} size="text-sm" />
+                          {review.recommended && <span className="bg-green-500/20 text-green-400 text-xs px-2 py-0.5 rounded">✓ Recommended</span>}
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-gray-400 text-sm line-clamp-2">{review.review_text}</p>
+                    <div className="flex items-center justify-between mt-3">
+                      <span className="text-gray-500 text-xs">{review.reviewer_type === 'investigator' ? '🔍 Investigator' : '👤 User'}</span>
+                      <span className="text-gray-500 text-xs">👍 {review.helpful_votes} helpful</span>
                     </div>
                   </div>
-                </div>
-                <p className="text-gray-400 text-sm line-clamp-2">{review.review_text}</p>
-                <div className="flex items-center justify-between mt-3">
-                  <span className="text-gray-500 text-xs">{review.reviewer_type === 'investigator' ? '🔍 Investigator' : '👤 User'}</span>
-                  <span className="text-gray-500 text-xs">👍 {review.helpful_votes} helpful</span>
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
+            )}
+          </>
+        )}
+
+        {/* Marketplace Tab */}
+        {activeTab === 'marketplace' && (
+          <>
+            <div className="flex flex-col sm:flex-row gap-4 mb-6">
+              <select value={filter} onChange={e => setFilter(e.target.value)} className="bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2 flex-1 sm:flex-none">
+                <option value="">All Categories</option>
+                {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+              </select>
+              <Link to="/marketplace/sell" className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg text-center">
+                + Sell Equipment
+              </Link>
+            </div>
+
+            {/* Marketplace Promo Banner */}
+            <div className="bg-gradient-to-r from-green-900/30 to-teal-900/30 border border-green-500/30 rounded-xl p-4 sm:p-6 mb-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-lg sm:text-xl font-bold text-white">🛒 Equipment Marketplace</h3>
+                  <p className="text-gray-300 text-sm sm:text-base">Buy, sell, or hire paranormal investigation equipment</p>
+                </div>
+                <Link to="/marketplace/sell" className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm whitespace-nowrap">
+                  List from £5
+                </Link>
+              </div>
+            </div>
+
+            {loading ? (
+              <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div></div>
+            ) : listings.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="text-4xl mb-4">📦</div>
+                <p className="text-gray-400">No listings yet. Be the first to sell your equipment!</p>
+              </div>
+            ) : (
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                {listings.filter(l => !filter || l.category === filter).map(listing => (
+                  <div key={listing.id} className="bg-gray-800/50 border border-green-500/20 rounded-xl overflow-hidden hover:border-green-500/50 cursor-pointer" onClick={() => navigate(`/marketplace/${listing.id}`)}>
+                    <div className="h-40 bg-gray-700 relative">
+                      {listing.images?.[0] ? (
+                        <img src={listing.images[0]} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-4xl">📷</div>
+                      )}
+                      {listing.featured && (
+                        <span className="absolute top-2 left-2 bg-yellow-500 text-black text-xs px-2 py-1 rounded font-semibold">⭐ Featured</span>
+                      )}
+                      <span className={`absolute top-2 right-2 text-xs px-2 py-1 rounded ${listing.listing_type === 'For Sale' ? 'bg-green-500 text-white' : listing.listing_type === 'For Hire' ? 'bg-blue-500 text-white' : 'bg-orange-500 text-white'}`}>
+                        {listing.listing_type}
+                      </span>
+                    </div>
+                    <div className="p-4">
+                      <h3 className="text-lg font-semibold text-white mb-1 truncate">{listing.title}</h3>
+                      <p className="text-gray-500 text-sm mb-2">{listing.category} • {listing.condition}</p>
+                      {listing.price_gbp ? (
+                        <p className="text-green-400 font-bold text-lg">£{(listing.price_gbp / 100).toFixed(2)}</p>
+                      ) : listing.hire_rate ? (
+                        <p className="text-blue-400 font-bold">{listing.hire_rate}</p>
+                      ) : (
+                        <p className="text-gray-400 text-sm">Contact for price</p>
+                      )}
+                      <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
+                        <span>👁️ {listing.views} views</span>
+                        <span>📍 {listing.seller_location?.address || 'UK'}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
