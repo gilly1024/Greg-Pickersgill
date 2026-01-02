@@ -65,9 +65,10 @@ SUBSCRIPTION_PRICES = {
 
 # Video Ad prices in GBP (pence)
 VIDEO_AD_PRICES = {
-    "weekly": 5000,  # £50/week
-    "monthly": 15000,  # £150/month
-    "quarterly": 35000,  # £350/quarter
+    "weekly_intro": 2000,  # £20/week (first 3 months)
+    "weekly_standard": 5000,  # £50/week (after 3 months)
+    "monthly_intro": 8000,  # £80/month (first 3 months) - 4 weeks
+    "monthly_standard": 20000,  # £200/month (after 3 months)
 }
 
 AD_CATEGORIES = [
