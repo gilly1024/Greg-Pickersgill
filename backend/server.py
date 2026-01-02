@@ -1326,6 +1326,129 @@ async def get_video_ad(ad_id: str):
         raise HTTPException(status_code=404, detail="Ad not found")
     return convert_doc_dates(ad)
 
+# ============== EQUIPMENT MARKETPLACE ROUTES ==============
+
+@api_router.get("/marketplace/pricing")
+async def get_marketplace_pricing():
+    return {
+        "plans": [
+            {"id": "basic", "name": "Basic Listing", "price_gbp": 5, "price_pence": 500, "duration_days": 30, "features": ["30-day listing", "Up to 5 images", "Standard placement"]},
+            {"id": "featured", "name": "Featured Listing", "price_gbp": 15, "price_pence": 1500, "duration_days": 30, "features": ["30-day listing", "Up to 10 images", "Featured placement", "Highlighted in search"]},
+            {"id": "premium", "name": "Premium Listing", "price_gbp": 30, "price_pence": 3000, "duration_days": 60, "features": ["60-day listing", "Unlimited images", "Top placement", "Social media promotion"]}
+        ],
+        "listing_types": EQUIPMENT_LISTING_TYPES,
+        "conditions": EQUIPMENT_CONDITIONS,
+        "categories": EQUIPMENT_CATEGORIES
+    }
+
+@api_router.post("/marketplace/listings", response_model=EquipmentListing)
+async def create_equipment_listing(listing_data: EquipmentListingCreate):
+    if listing_data.category not in EQUIPMENT_CATEGORIES:
+        raise HTTPException(status_code=400, detail="Invalid category")
+    if listing_data.condition not in EQUIPMENT_CONDITIONS:
+        raise HTTPException(status_code=400, detail="Invalid condition")
+    if listing_data.listing_type not in EQUIPMENT_LISTING_TYPES:
+        raise HTTPException(status_code=400, detail="Invalid listing type")
+    
+    # Calculate listing duration and fee
+    plan_config = {
+        "basic": {"days": 30, "fee": 500, "featured": False},
+        "featured": {"days": 30, "fee": 1500, "featured": True},
+        "premium": {"days": 60, "fee": 3000, "featured": True}
+    }
+    config = plan_config.get(listing_data.listing_plan, plan_config["basic"])
+    
+    listing = EquipmentListing(
+        **listing_data.model_dump(),
+        listing_fee_paid=config["fee"],
+        featured=config["featured"],
+        expires_at=datetime.now(timezone.utc) + timedelta(days=config["days"])
+    )
+    
+    doc = listing.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    doc['expires_at'] = doc['expires_at'].isoformat()
+    if doc.get('seller_location'):
+        pass  # Location is already a dict
+    
+    await db.equipment_listings.insert_one(doc)
+    return listing
+
+@api_router.get("/marketplace/listings")
+async def get_equipment_listings(
+    category: Optional[str] = None,
+    listing_type: Optional[str] = None,
+    condition: Optional[str] = None,
+    max_price: Optional[int] = None,
+    featured_only: bool = False,
+    active_only: bool = True,
+    limit: int = 50,
+    skip: int = 0
+):
+    query = {}
+    if active_only:
+        query['status'] = 'active'
+        query['expires_at'] = {"$gt": datetime.now(timezone.utc).isoformat()}
+    if category:
+        query['category'] = category
+    if listing_type:
+        query['listing_type'] = listing_type
+    if condition:
+        query['condition'] = condition
+    if max_price:
+        query['price_gbp'] = {"$lte": max_price}
+    if featured_only:
+        query['featured'] = True
+    
+    cursor = db.equipment_listings.find(query, {"_id": 0}).skip(skip).limit(limit).sort([("featured", -1), ("created_at", -1)])
+    listings = await cursor.to_list(limit)
+    return {"listings": [convert_doc_dates(l) for l in listings], "count": len(listings)}
+
+@api_router.get("/marketplace/listings/{listing_id}")
+async def get_equipment_listing(listing_id: str):
+    listing = await db.equipment_listings.find_one({"id": listing_id}, {"_id": 0})
+    if not listing:
+        raise HTTPException(status_code=404, detail="Listing not found")
+    # Increment views
+    await db.equipment_listings.update_one({"id": listing_id}, {"$inc": {"views": 1}})
+    return convert_doc_dates(listing)
+
+@api_router.post("/marketplace/listings/{listing_id}/enquire")
+async def enquire_about_listing(listing_id: str, enquirer_name: str, enquirer_email: str, message: str, enquirer_phone: Optional[str] = None):
+    listing = await db.equipment_listings.find_one({"id": listing_id})
+    if not listing:
+        raise HTTPException(status_code=404, detail="Listing not found")
+    
+    enquiry = EquipmentEnquiry(
+        listing_id=listing_id,
+        enquirer_name=enquirer_name,
+        enquirer_email=enquirer_email,
+        enquirer_phone=enquirer_phone,
+        message=message
+    )
+    doc = enquiry.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.equipment_enquiries.insert_one(doc)
+    
+    # Increment enquiry count
+    await db.equipment_listings.update_one({"id": listing_id}, {"$inc": {"enquiries": 1}})
+    
+    return {"message": "Enquiry sent successfully", "enquiry_id": enquiry.id}
+
+@api_router.put("/marketplace/listings/{listing_id}/sold")
+async def mark_listing_sold(listing_id: str):
+    result = await db.equipment_listings.update_one({"id": listing_id}, {"$set": {"status": "sold"}})
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Listing not found")
+    return {"message": "Listing marked as sold"}
+
+@api_router.delete("/marketplace/listings/{listing_id}")
+async def remove_listing(listing_id: str):
+    result = await db.equipment_listings.update_one({"id": listing_id}, {"$set": {"status": "removed"}})
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Listing not found")
+    return {"message": "Listing removed"}
+
 # ============== AI REPORT GENERATOR ROUTES ==============
 
 @api_router.post("/ai/generate-report", response_model=AIGeneratedReport)
