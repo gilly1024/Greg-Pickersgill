@@ -623,7 +623,7 @@ const HauntingDetailPage = () => {
 
   useEffect(() => {
     Promise.all([
-      axios.get(`${API}/hauntings/${id}?is_subscriber=${isSubscriber}`),
+      axios.get(`${API}/hauntings/${id}?is_subscriber=${isSubscriber ? 'true' : 'false'}`),
       axios.get(`${API}/investigators?active_only=true&limit=5`)
     ]).then(([reportRes, invRes]) => {
       setReport(reportRes.data);
