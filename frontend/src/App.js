@@ -1974,7 +1974,7 @@ const AdvertisePage = () => {
   const [form, setForm] = useState({
     advertiser_name: '', advertiser_email: '', company_name: '', category: '',
     video_url: '', thumbnail_url: '', title: '', description: '', click_url: '',
-    target_pages: [], plan: 'monthly'
+    target_pages: [], plan: 'weekly_intro'
   });
   const [submitting, setSubmitting] = useState(false);
 
@@ -2011,33 +2011,82 @@ const AdvertisePage = () => {
     }
   };
 
+  // Group plans by intro/standard
+  const introPlans = pricing?.plans?.filter(p => p.is_intro) || [];
+  const standardPlans = pricing?.plans?.filter(p => !p.is_intro) || [];
+
   return (
     <div className="min-h-screen bg-gray-900 py-8">
       <div className="max-w-4xl mx-auto px-4">
-        <div className="text-center mb-12">
+        <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-white mb-4">📺 Advertise on ParaInvestigate</h1>
           <p className="text-gray-400 text-lg">Reach thousands of paranormal enthusiasts with your 20-second video ad</p>
         </div>
 
-        {/* Pricing Cards */}
+        {/* Special Offer Banner */}
+        <div className="bg-gradient-to-r from-green-900/50 to-teal-900/50 border border-green-500/50 rounded-xl p-6 mb-8 text-center">
+          <div className="text-2xl mb-2">🎉 Launch Special!</div>
+          <h2 className="text-2xl font-bold text-white mb-2">£20/week for the first 3 months</h2>
+          <p className="text-gray-300">Then £50/week thereafter. Lock in introductory pricing now!</p>
+        </div>
+
+        {/* Pricing Cards - Introductory */}
         {pricing && (
-          <div className="grid md:grid-cols-3 gap-6 mb-12">
-            {pricing.plans.map((plan) => (
-              <div
-                key={plan.id}
-                onClick={() => setForm({...form, plan: plan.id})}
-                className={`rounded-xl p-6 cursor-pointer transition border-2 ${
-                  form.plan === plan.id 
-                    ? 'bg-yellow-500/20 border-yellow-500' 
-                    : 'bg-gray-800/50 border-gray-700 hover:border-gray-600'
-                }`}
-              >
-                <h3 className="text-xl font-bold text-white mb-2">{plan.name}</h3>
-                <div className="mb-2">
-                  <span className="text-3xl font-bold text-yellow-400">£{plan.price_gbp}</span>
+          <>
+            <h3 className="text-xl font-bold text-green-400 mb-4">🌟 Introductory Rates (First 3 Months)</h3>
+            <div className="grid md:grid-cols-2 gap-6 mb-8">
+              {introPlans.map((plan) => (
+                <div
+                  key={plan.id}
+                  onClick={() => setForm({...form, plan: plan.id})}
+                  className={`rounded-xl p-6 cursor-pointer transition border-2 ${
+                    form.plan === plan.id 
+                      ? 'bg-green-500/20 border-green-500' 
+                      : 'bg-gray-800/50 border-gray-700 hover:border-gray-600'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-xl font-bold text-white">{plan.name}</h3>
+                    <span className="bg-green-500/20 text-green-400 text-xs px-2 py-1 rounded-full">LAUNCH OFFER</span>
+                  </div>
+                  <div className="mb-2">
+                    <span className="text-4xl font-bold text-green-400">£{plan.price_gbp}</span>
+                    <span className="text-gray-400">/{plan.duration_days === 7 ? 'week' : 'month'}</span>
+                  </div>
+                  <p className="text-gray-400 text-sm">{plan.description}</p>
+                  {form.plan === plan.id && (
+                    <div className="mt-3 text-green-400 text-sm font-semibold">✓ Selected</div>
+                  )}
                 </div>
-                <p className="text-gray-400">{plan.duration_days} days of exposure</p>
-                {form.plan === plan.id && (
+              ))}
+            </div>
+
+            <h3 className="text-xl font-bold text-gray-400 mb-4">Standard Rates (After 3 Months)</h3>
+            <div className="grid md:grid-cols-2 gap-6 mb-12">
+              {standardPlans.map((plan) => (
+                <div
+                  key={plan.id}
+                  onClick={() => setForm({...form, plan: plan.id})}
+                  className={`rounded-xl p-6 cursor-pointer transition border-2 ${
+                    form.plan === plan.id 
+                      ? 'bg-yellow-500/20 border-yellow-500' 
+                      : 'bg-gray-800/50 border-gray-700 hover:border-gray-600'
+                  }`}
+                >
+                  <h3 className="text-xl font-bold text-white mb-2">{plan.name}</h3>
+                  <div className="mb-2">
+                    <span className="text-3xl font-bold text-yellow-400">£{plan.price_gbp}</span>
+                    <span className="text-gray-400">/{plan.duration_days === 7 ? 'week' : 'month'}</span>
+                  </div>
+                  <p className="text-gray-400 text-sm">{plan.description}</p>
+                  {form.plan === plan.id && (
+                    <div className="mt-3 text-yellow-400 text-sm font-semibold">✓ Selected</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
                   <div className="mt-2 text-yellow-400 text-sm">✓ Selected</div>
                 )}
               </div>
