@@ -306,7 +306,7 @@ const HomePage = () => {
           <h2 className="text-2xl font-bold text-white mb-3">📺 Advertise Your Paranormal Channel or Company</h2>
           <p className="text-gray-300 mb-6">Reach thousands of paranormal enthusiasts with video ads. YouTube channels, investigation companies, equipment retailers welcome!</p>
           <Link to="/advertise" className="bg-yellow-500 hover:bg-yellow-600 text-black px-8 py-3 rounded-lg font-semibold">
-            Advertise from £50/week
+            Advertise from £20/week
           </Link>
         </div>
       </div>
