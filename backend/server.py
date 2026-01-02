@@ -63,6 +63,24 @@ SUBSCRIPTION_PRICES = {
     "yearly_investigator": 20000,  # £200
 }
 
+# Video Ad prices in GBP (pence)
+VIDEO_AD_PRICES = {
+    "weekly": 5000,  # £50/week
+    "monthly": 15000,  # £150/month
+    "quarterly": 35000,  # £350/quarter
+}
+
+AD_CATEGORIES = [
+    "Paranormal Investigation Company",
+    "YouTube Channel",
+    "Podcast",
+    "Equipment Retailer",
+    "Paranormal Events",
+    "Books/Media",
+    "Training/Courses",
+    "Other"
+]
+
 # ============== MODELS ==============
 
 class Location(BaseModel):
