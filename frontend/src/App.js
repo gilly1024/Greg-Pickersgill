@@ -1839,6 +1839,556 @@ const MapPage = () => {
   );
 };
 
+// ============== VIDEO AD COMPONENTS ==============
+
+const VideoAdPlayer = ({ ads, autoRotate = true, rotationInterval = 20000 }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(true);
+
+  useEffect(() => {
+    if (!autoRotate || ads.length <= 1) return;
+    const timer = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % ads.length);
+    }, rotationInterval);
+    return () => clearInterval(timer);
+  }, [ads.length, autoRotate, rotationInterval]);
+
+  const recordImpression = async (adId) => {
+    try {
+      await axios.post(`${API}/ads/${adId}/impression`);
+    } catch (e) { console.error('Failed to record impression'); }
+  };
+
+  const handleClick = async (ad) => {
+    try {
+      const response = await axios.post(`${API}/ads/${ad.id}/click`);
+      window.open(response.data.click_url || ad.click_url, '_blank');
+    } catch (e) {
+      window.open(ad.click_url, '_blank');
+    }
+  };
+
+  useEffect(() => {
+    if (ads[currentIndex]) {
+      recordImpression(ads[currentIndex].id);
+    }
+  }, [currentIndex, ads]);
+
+  if (!ads || ads.length === 0) return null;
+
+  const currentAd = ads[currentIndex];
+
+  return (
+    <div className="bg-gray-800/50 border border-yellow-500/30 rounded-xl overflow-hidden">
+      <div className="bg-yellow-500/10 px-3 py-1 flex justify-between items-center">
+        <span className="text-yellow-400 text-xs font-semibold">SPONSORED</span>
+        <span className="text-gray-500 text-xs">{currentIndex + 1}/{ads.length}</span>
+      </div>
+      <div className="relative cursor-pointer" onClick={() => handleClick(currentAd)}>
+        {currentAd.video_url ? (
+          <video
+            key={currentAd.id}
+            src={currentAd.video_url}
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="w-full h-40 object-cover"
+          />
+        ) : (
+          <div className="w-full h-40 bg-gray-700 flex items-center justify-center">
+            <span className="text-4xl">📺</span>
+          </div>
+        )}
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
+          <p className="text-white font-semibold text-sm">{currentAd.title}</p>
+          <p className="text-gray-300 text-xs">{currentAd.company_name}</p>
+        </div>
+      </div>
+      {ads.length > 1 && (
+        <div className="flex justify-center gap-1 p-2">
+          {ads.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrentIndex(i)}
+              className={`w-2 h-2 rounded-full ${i === currentIndex ? 'bg-yellow-400' : 'bg-gray-600'}`}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const AdvertisePage = () => {
+  const navigate = useNavigate();
+  const [pricing, setPricing] = useState(null);
+  const [form, setForm] = useState({
+    advertiser_name: '', advertiser_email: '', company_name: '', category: '',
+    video_url: '', thumbnail_url: '', title: '', description: '', click_url: '',
+    target_pages: [], plan: 'monthly'
+  });
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    axios.get(`${API}/ads/pricing`).then(res => setPricing(res.data));
+  }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      await axios.post(`${API}/ads`, form);
+      toast.success('Ad submitted for review! You will be notified once approved.');
+      navigate('/');
+    } catch (error) {
+      toast.error('Failed to submit ad');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleVideoUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 50 * 1024 * 1024) {
+        toast.error('Video must be under 50MB');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setForm(prev => ({ ...prev, video_url: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-900 py-8">
+      <div className="max-w-4xl mx-auto px-4">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-white mb-4">📺 Advertise on ParaInvestigate</h1>
+          <p className="text-gray-400 text-lg">Reach thousands of paranormal enthusiasts with your 20-second video ad</p>
+        </div>
+
+        {/* Pricing Cards */}
+        {pricing && (
+          <div className="grid md:grid-cols-3 gap-6 mb-12">
+            {pricing.plans.map((plan) => (
+              <div
+                key={plan.id}
+                onClick={() => setForm({...form, plan: plan.id})}
+                className={`rounded-xl p-6 cursor-pointer transition border-2 ${
+                  form.plan === plan.id 
+                    ? 'bg-yellow-500/20 border-yellow-500' 
+                    : 'bg-gray-800/50 border-gray-700 hover:border-gray-600'
+                }`}
+              >
+                <h3 className="text-xl font-bold text-white mb-2">{plan.name}</h3>
+                <div className="mb-2">
+                  <span className="text-3xl font-bold text-yellow-400">£{plan.price_gbp}</span>
+                </div>
+                <p className="text-gray-400">{plan.duration_days} days of exposure</p>
+                {form.plan === plan.id && (
+                  <div className="mt-2 text-yellow-400 text-sm">✓ Selected</div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Ad Form */}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6">
+            <h2 className="text-xl font-bold text-white mb-4">Your Details</h2>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-gray-300 mb-2">Your Name *</label>
+                <input type="text" value={form.advertiser_name} onChange={e => setForm({...form, advertiser_name: e.target.value})} className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-3" required />
+              </div>
+              <div>
+                <label className="block text-gray-300 mb-2">Email *</label>
+                <input type="email" value={form.advertiser_email} onChange={e => setForm({...form, advertiser_email: e.target.value})} className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-3" required />
+              </div>
+              <div>
+                <label className="block text-gray-300 mb-2">Company/Channel Name *</label>
+                <input type="text" value={form.company_name} onChange={e => setForm({...form, company_name: e.target.value})} className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-3" required />
+              </div>
+              <div>
+                <label className="block text-gray-300 mb-2">Category *</label>
+                <select value={form.category} onChange={e => setForm({...form, category: e.target.value})} className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-3" required>
+                  <option value="">Select category</option>
+                  {pricing?.categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6">
+            <h2 className="text-xl font-bold text-white mb-4">📹 Video Ad (Max 20 seconds)</h2>
+            <div className="mb-4">
+              <label className="block text-gray-300 mb-2">Upload Video *</label>
+              <div className="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center">
+                <input type="file" accept="video/mp4,video/webm,video/quicktime" onChange={handleVideoUpload} className="hidden" id="video-upload" />
+                <label htmlFor="video-upload" className="cursor-pointer">
+                  {form.video_url ? (
+                    <div>
+                      <video src={form.video_url} className="max-h-40 mx-auto rounded-lg mb-2" controls />
+                      <p className="text-green-400 text-sm">✓ Video uploaded - Click to change</p>
+                    </div>
+                  ) : (
+                    <div className="text-gray-400">
+                      <span className="text-5xl">📹</span>
+                      <p className="mt-2">Click to upload video (MP4, WebM, MOV)</p>
+                      <p className="text-sm">Max 20 seconds, 50MB</p>
+                    </div>
+                  )}
+                </label>
+              </div>
+            </div>
+            <div className="mb-4">
+              <label className="block text-gray-300 mb-2">Or paste video URL</label>
+              <input type="url" value={form.video_url.startsWith('data:') ? '' : form.video_url} onChange={e => setForm({...form, video_url: e.target.value})} className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-3" placeholder="https://youtube.com/... or direct video URL" />
+            </div>
+          </div>
+
+          <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6">
+            <h2 className="text-xl font-bold text-white mb-4">Ad Content</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-gray-300 mb-2">Ad Title *</label>
+                <input type="text" value={form.title} onChange={e => setForm({...form, title: e.target.value})} className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-3" maxLength={60} required />
+              </div>
+              <div>
+                <label className="block text-gray-300 mb-2">Description</label>
+                <textarea value={form.description} onChange={e => setForm({...form, description: e.target.value})} className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-3" rows={2} maxLength={200} />
+              </div>
+              <div>
+                <label className="block text-gray-300 mb-2">Click-through URL *</label>
+                <input type="url" value={form.click_url} onChange={e => setForm({...form, click_url: e.target.value})} className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-3" placeholder="https://yourwebsite.com or YouTube channel URL" required />
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" disabled={submitting} className="w-full bg-yellow-500 hover:bg-yellow-600 disabled:bg-gray-700 text-black font-bold py-4 rounded-lg text-lg">
+            {submitting ? 'Submitting...' : `Submit Ad - £${pricing?.plans.find(p => p.id === form.plan)?.price_gbp || 150}`}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// ============== AI REPORT GENERATOR ==============
+
+const AIReportGeneratorPage = () => {
+  const navigate = useNavigate();
+  const [rawText, setRawText] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [report, setReport] = useState(null);
+  const [convertForm, setConvertForm] = useState({ reporter_name: '', reporter_email: '' });
+
+  const generateReport = async () => {
+    if (!rawText.trim()) {
+      toast.error('Please paste some information to analyze');
+      return;
+    }
+    setLoading(true);
+    try {
+      const response = await axios.post(`${API}/ai/generate-report`, {
+        raw_text: rawText,
+        include_location_extraction: true,
+        include_media_suggestions: true,
+        report_type: "auto"
+      });
+      setReport(response.data);
+      toast.success('AI Report Generated!');
+    } catch (error) {
+      toast.error('Failed to generate report');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const convertToSighting = async () => {
+    try {
+      const response = await axios.post(`${API}/ai/generate-report/convert-to-sighting?report_id=${report.id}`);
+      toast.success('Sighting created!');
+      navigate(`/sighting/${response.data.sighting_id}`);
+    } catch (error) {
+      toast.error('Failed to convert to sighting');
+    }
+  };
+
+  const convertToHaunting = async () => {
+    if (!convertForm.reporter_name || !convertForm.reporter_email) {
+      toast.error('Please enter name and email');
+      return;
+    }
+    try {
+      const response = await axios.post(
+        `${API}/ai/generate-report/convert-to-haunting?report_id=${report.id}&reporter_name=${convertForm.reporter_name}&reporter_email=${convertForm.reporter_email}`
+      );
+      toast.success('Haunting report created!');
+      navigate(`/haunting/${response.data.haunting_id}`);
+    } catch (error) {
+      toast.error('Failed to convert to haunting');
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-900 py-8">
+      <div className="max-w-5xl mx-auto px-4">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-white mb-4">🤖 AI Report Generator</h1>
+          <p className="text-gray-400 text-lg">Paste any information and our AI will create a structured paranormal report</p>
+        </div>
+
+        {!report ? (
+          <div className="space-y-6">
+            <div className="bg-gray-800/50 border border-purple-500/30 rounded-xl p-6">
+              <h2 className="text-xl font-bold text-white mb-4">📋 Paste Your Information</h2>
+              <p className="text-gray-400 mb-4">
+                Copy and paste any text - news articles, witness accounts, social media posts, emails, or notes. 
+                The AI will extract locations, dates, entities, and create a full structured report.
+              </p>
+              <textarea
+                value={rawText}
+                onChange={e => setRawText(e.target.value)}
+                className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-3 min-h-[300px] font-mono text-sm"
+                placeholder={`Example input:
+
+"Last night around 3am on November 15th 2024, my family and I witnessed something incredible at our home in York, UK. We heard loud banging from the attic, then all the lights in the house flickered. My daughter said she saw a tall shadowy figure standing at the end of the hallway. The temperature dropped suddenly - we could see our breath. This has been happening for weeks now. Three of us saw it. We're scared and don't know what to do. Our neighbors mentioned the previous owners moved out suddenly 5 years ago after strange incidents."
+
+Paste anything - the AI will extract and analyze it!`}
+              />
+              <div className="flex items-center justify-between mt-4">
+                <span className="text-gray-500 text-sm">{rawText.length} characters</span>
+                <button
+                  onClick={generateReport}
+                  disabled={loading || !rawText.trim()}
+                  className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 text-white px-8 py-3 rounded-lg font-semibold"
+                >
+                  {loading ? (
+                    <span className="flex items-center gap-2">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      Analyzing...
+                    </span>
+                  ) : (
+                    '🤖 Generate Report'
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-gray-800/30 border border-gray-700 rounded-xl p-6">
+              <h3 className="text-lg font-bold text-white mb-3">💡 What can AI extract?</h3>
+              <div className="grid md:grid-cols-3 gap-4 text-sm">
+                <div className="flex items-start gap-2">
+                  <span className="text-green-400">✓</span>
+                  <span className="text-gray-300">Location coordinates & addresses</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-green-400">✓</span>
+                  <span className="text-gray-300">Dates and time periods</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-green-400">✓</span>
+                  <span className="text-gray-300">Witness count</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-green-400">✓</span>
+                  <span className="text-gray-300">Entity descriptions</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-green-400">✓</span>
+                  <span className="text-gray-300">Credibility assessment</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-green-400">✓</span>
+                  <span className="text-gray-300">Severity rating</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-green-400">✓</span>
+                  <span className="text-gray-300">Key evidence</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-green-400">✓</span>
+                  <span className="text-gray-300">Investigation steps</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-green-400">✓</span>
+                  <span className="text-gray-300">Similar historical cases</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {/* Generated Report Display */}
+            <div className="bg-gray-800/50 border border-green-500/30 rounded-xl p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-bold text-white">{report.title}</h2>
+                <span className="bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-sm">AI Generated</span>
+              </div>
+              
+              <div className="flex flex-wrap gap-3 mb-4">
+                <span className="bg-purple-500/20 text-purple-300 px-3 py-1 rounded-full text-sm">{report.category}</span>
+                {report.haunting_type && <span className="bg-red-500/20 text-red-300 px-3 py-1 rounded-full text-sm">{report.haunting_type}</span>}
+                {report.severity_assessment && <span className="bg-orange-500/20 text-orange-300 px-3 py-1 rounded-full text-sm">Severity: {report.severity_assessment}</span>}
+              </div>
+
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-white mb-2">Summary</h3>
+                <p className="text-gray-300">{report.summary}</p>
+              </div>
+
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-white mb-2">Detailed Description</h3>
+                <p className="text-gray-300 whitespace-pre-wrap">{report.detailed_description}</p>
+              </div>
+            </div>
+
+            {/* Extracted Data */}
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Locations */}
+              {report.locations?.length > 0 && (
+                <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6">
+                  <h3 className="text-lg font-semibold text-white mb-3">📍 Extracted Locations</h3>
+                  <div className="space-y-2">
+                    {report.locations.map((loc, i) => (
+                      <div key={i} className="bg-gray-700/50 rounded-lg p-3">
+                        <p className="text-gray-300">{loc.address || `${loc.latitude}, ${loc.longitude}`}</p>
+                        <p className="text-gray-500 text-sm">Lat: {loc.latitude}, Lng: {loc.longitude}</p>
+                      </div>
+                    ))}
+                  </div>
+                  {report.locations.length > 0 && (
+                    <div className="mt-4 h-48 rounded-lg overflow-hidden">
+                      <MapContainer center={[report.locations[0].latitude, report.locations[0].longitude]} zoom={10} style={{height: '100%', width: '100%'}}>
+                        <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
+                        {report.locations.map((loc, i) => (
+                          <Marker key={i} position={[loc.latitude, loc.longitude]} />
+                        ))}
+                      </MapContainer>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Analysis */}
+              <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6">
+                <h3 className="text-lg font-semibold text-white mb-3">🔍 Analysis</h3>
+                <div className="space-y-3">
+                  <div>
+                    <span className="text-gray-400 text-sm">Credibility Assessment</span>
+                    <p className="text-gray-300">{report.credibility_assessment}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-400 text-sm">Witnesses</span>
+                    <p className="text-gray-300">{report.witnesses_mentioned}</p>
+                  </div>
+                  {report.dates_mentioned?.length > 0 && (
+                    <div>
+                      <span className="text-gray-400 text-sm">Dates Mentioned</span>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {report.dates_mentioned.map((d, i) => (
+                          <span key={i} className="bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded text-sm">{d}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {report.entities_described?.length > 0 && (
+                    <div>
+                      <span className="text-gray-400 text-sm">Entities Described</span>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {report.entities_described.map((e, i) => (
+                          <span key={i} className="bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded text-sm">{e}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Key Evidence & Recommendations */}
+            <div className="grid md:grid-cols-2 gap-6">
+              {report.key_evidence?.length > 0 && (
+                <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6">
+                  <h3 className="text-lg font-semibold text-white mb-3">📸 Key Evidence</h3>
+                  <ul className="space-y-2">
+                    {report.key_evidence.map((e, i) => (
+                      <li key={i} className="flex items-start gap-2 text-gray-300">
+                        <span className="text-green-400">•</span> {e}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {report.investigation_recommendations?.length > 0 && (
+                <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6">
+                  <h3 className="text-lg font-semibold text-white mb-3">🔬 Investigation Recommendations</h3>
+                  <ol className="space-y-2">
+                    {report.investigation_recommendations.map((r, i) => (
+                      <li key={i} className="flex items-start gap-2 text-gray-300">
+                        <span className="text-purple-400">{i + 1}.</span> {r}
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              )}
+            </div>
+
+            {/* Similar Cases */}
+            {report.similar_cases?.length > 0 && (
+              <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6">
+                <h3 className="text-lg font-semibold text-white mb-3">📚 Similar Historical Cases</h3>
+                <div className="flex flex-wrap gap-2">
+                  {report.similar_cases.map((c, i) => (
+                    <span key={i} className="bg-gray-700 text-gray-300 px-3 py-1 rounded-lg text-sm">{c}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Convert Actions */}
+            <div className="bg-gradient-to-r from-purple-900/30 to-blue-900/30 border border-purple-500/30 rounded-xl p-6">
+              <h3 className="text-xl font-bold text-white mb-4">📝 Convert to Official Report</h3>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="text-white font-semibold mb-2">Create as Sighting</h4>
+                  <p className="text-gray-400 text-sm mb-3">Add this to the public sightings database</p>
+                  <button onClick={convertToSighting} className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg">
+                    Create Sighting
+                  </button>
+                </div>
+                <div>
+                  <h4 className="text-white font-semibold mb-2">Create as Haunting Report</h4>
+                  <p className="text-gray-400 text-sm mb-2">Submit as a haunting case for investigation</p>
+                  <div className="flex gap-2 mb-2">
+                    <input type="text" value={convertForm.reporter_name} onChange={e => setConvertForm({...convertForm, reporter_name: e.target.value})} placeholder="Your name" className="flex-1 bg-gray-700 border border-gray-600 text-white rounded px-3 py-2 text-sm" />
+                    <input type="email" value={convertForm.reporter_email} onChange={e => setConvertForm({...convertForm, reporter_email: e.target.value})} placeholder="Email" className="flex-1 bg-gray-700 border border-gray-600 text-white rounded px-3 py-2 text-sm" />
+                  </div>
+                  <button onClick={convertToHaunting} className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg">
+                    Create Haunting Report
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Start Over */}
+            <button onClick={() => { setReport(null); setRawText(''); }} className="w-full bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-lg">
+              ← Generate Another Report
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 function App() {
   return (
     <AuthProvider>
