@@ -283,6 +283,33 @@ const HomePage = () => {
           </Link>
         </div>
       </div>
+
+      {/* AI Report Generator CTA */}
+      <div className="max-w-7xl mx-auto px-4 py-16">
+        <div className="bg-gradient-to-r from-blue-900/30 to-purple-900/30 border border-purple-500/30 rounded-2xl p-8 flex flex-col md:flex-row items-center gap-8">
+          <div className="text-6xl">🤖</div>
+          <div className="flex-1 text-center md:text-left">
+            <h2 className="text-2xl font-bold text-white mb-2">AI Report Generator</h2>
+            <p className="text-gray-300 mb-4">
+              Have information about a paranormal incident? Paste any text - news articles, witness accounts, social media posts - and our AI will create a structured report with locations, dates, analysis, and investigation recommendations.
+            </p>
+            <Link to="/ai-report" className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg inline-block">
+              Try AI Report Generator →
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Advertise CTA */}
+      <div className="bg-yellow-500/10 border-y border-yellow-500/30 py-12">
+        <div className="max-w-4xl mx-auto px-4 text-center">
+          <h2 className="text-2xl font-bold text-white mb-3">📺 Advertise Your Paranormal Channel or Company</h2>
+          <p className="text-gray-300 mb-6">Reach thousands of paranormal enthusiasts with video ads. YouTube channels, investigation companies, equipment retailers welcome!</p>
+          <Link to="/advertise" className="bg-yellow-500 hover:bg-yellow-600 text-black px-8 py-3 rounded-lg font-semibold">
+            Advertise from £50/week
+          </Link>
+        </div>
+      </div>
     </div>
   );
 };
