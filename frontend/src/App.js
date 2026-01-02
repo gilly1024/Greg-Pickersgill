@@ -99,7 +99,9 @@ const Navbar = () => {
             <Link to="/hauntings" className="text-gray-300 hover:text-purple-400 px-3 py-2 text-sm">Hauntings</Link>
             <Link to="/investigators" className="text-gray-300 hover:text-purple-400 px-3 py-2 text-sm">Investigators</Link>
             <Link to="/equipment" className="text-gray-300 hover:text-purple-400 px-3 py-2 text-sm">Equipment</Link>
+            <Link to="/ai-report" className="text-gray-300 hover:text-purple-400 px-3 py-2 text-sm">🤖 AI</Link>
             <Link to="/map" className="text-gray-300 hover:text-purple-400 px-3 py-2 text-sm">Map</Link>
+            <Link to="/advertise" className="text-yellow-400 hover:text-yellow-300 px-3 py-2 text-sm">📺 Advertise</Link>
             
             {!isSubscriber && (
               <Link to="/pricing" className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-lg text-sm font-semibold ml-2">
