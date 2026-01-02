@@ -416,6 +416,90 @@ class DonationCreate(BaseModel):
     message: Optional[str] = None
     anonymous: bool = False
 
+# ============== VIDEO AD MODELS ==============
+
+class VideoAd(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    # Advertiser info
+    advertiser_name: str
+    advertiser_email: str
+    company_name: str
+    category: str
+    # Ad content
+    video_url: str  # URL to video file or base64
+    thumbnail_url: Optional[str] = None
+    title: str
+    description: str
+    click_url: str  # Where to redirect when clicked
+    # Targeting
+    target_pages: List[str] = []  # Which pages to show on
+    # Payment & Duration
+    plan: str  # weekly, monthly, quarterly
+    amount_paid_gbp: int
+    start_date: datetime
+    end_date: datetime
+    # Stats
+    impressions: int = 0
+    clicks: int = 0
+    # Status
+    status: str = "pending"  # pending, active, paused, expired, rejected
+    approved: bool = False
+    # Meta
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class VideoAdCreate(BaseModel):
+    advertiser_name: str
+    advertiser_email: str
+    company_name: str
+    category: str
+    video_url: str
+    thumbnail_url: Optional[str] = None
+    title: str
+    description: str
+    click_url: str
+    target_pages: List[str] = []
+    plan: str
+
+# ============== AI REPORT GENERATOR MODELS ==============
+
+class AIGeneratedReport(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    # Input
+    raw_input: str
+    input_type: str  # "text", "url", "mixed"
+    # Generated content
+    title: str
+    summary: str
+    detailed_description: str
+    category: str
+    haunting_type: Optional[str] = None
+    # Extracted data
+    locations: List[Location] = []
+    dates_mentioned: List[str] = []
+    witnesses_mentioned: int = 0
+    entities_described: List[str] = []
+    # Media suggestions
+    suggested_images: List[str] = []
+    audio_transcriptions: List[str] = []
+    # Analysis
+    credibility_assessment: str
+    severity_assessment: Optional[str] = None
+    key_evidence: List[str] = []
+    investigation_recommendations: List[str] = []
+    similar_cases: List[str] = []
+    # Meta
+    generated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    generator_user_id: Optional[str] = None
+
+class AIReportRequest(BaseModel):
+    raw_text: str
+    include_location_extraction: bool = True
+    include_media_suggestions: bool = True
+    report_type: str = "auto"  # "sighting", "haunting", "auto"
+
 # ============== HELPER FUNCTIONS ==============
 
 def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
