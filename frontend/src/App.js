@@ -81,30 +81,44 @@ const severityColors = {
 const Navbar = () => {
   const { user, logout, isSubscriber } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const navigate = useNavigate();
+
+  const closeMobileMenu = () => setMobileMenuOpen(false);
+
+  const NavLink = ({ to, children, className = "" }) => (
+    <Link 
+      to={to} 
+      className={`text-gray-300 hover:text-purple-400 px-3 py-2 text-sm transition-colors ${className}`}
+      onClick={closeMobileMenu}
+    >
+      {children}
+    </Link>
+  );
 
   return (
-    <nav className="bg-gray-900 border-b border-purple-500/30 sticky top-0 z-50">
+    <nav className="bg-gray-900/95 backdrop-blur-md border-b border-purple-500/30 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          <Link to="/" className="flex items-center space-x-2" data-testid="nav-logo">
-            <span className="text-2xl">👻</span>
-            <span className="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">
+        <div className="flex items-center justify-between h-14 sm:h-16">
+          <Link to="/" className="flex items-center space-x-2" data-testid="nav-logo" onClick={closeMobileMenu}>
+            <span className="text-xl sm:text-2xl">👻</span>
+            <span className="text-lg sm:text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">
               ParaInvestigate
             </span>
           </Link>
           
-          <div className="hidden md:flex items-center space-x-1">
-            <Link to="/" className="text-gray-300 hover:text-purple-400 px-3 py-2 text-sm">Home</Link>
-            <Link to="/sightings" className="text-gray-300 hover:text-purple-400 px-3 py-2 text-sm">Sightings</Link>
-            <Link to="/hauntings" className="text-gray-300 hover:text-purple-400 px-3 py-2 text-sm">Hauntings</Link>
-            <Link to="/investigators" className="text-gray-300 hover:text-purple-400 px-3 py-2 text-sm">Investigators</Link>
-            <Link to="/equipment" className="text-gray-300 hover:text-purple-400 px-3 py-2 text-sm">Equipment</Link>
-            <Link to="/ai-report" className="text-gray-300 hover:text-purple-400 px-3 py-2 text-sm">🤖 AI</Link>
-            <Link to="/map" className="text-gray-300 hover:text-purple-400 px-3 py-2 text-sm">Map</Link>
-            <Link to="/advertise" className="text-yellow-400 hover:text-yellow-300 px-3 py-2 text-sm">📺 Advertise</Link>
+          {/* Desktop Navigation */}
+          <div className="hidden lg:flex items-center space-x-1">
+            <NavLink to="/">Home</NavLink>
+            <NavLink to="/sightings">Sightings</NavLink>
+            <NavLink to="/hauntings">Hauntings</NavLink>
+            <NavLink to="/investigators">Investigators</NavLink>
+            <NavLink to="/equipment">Equipment</NavLink>
+            <NavLink to="/ai-report">🤖 AI</NavLink>
+            <NavLink to="/map">Map</NavLink>
+            <NavLink to="/advertise" className="text-yellow-400 hover:text-yellow-300">📺 Advertise</NavLink>
             
             {!isSubscriber && (
-              <Link to="/pricing" className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-lg text-sm font-semibold ml-2">
+              <Link to="/pricing" className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-lg text-sm font-semibold ml-2 hover:opacity-90 transition-opacity">
                 Subscribe
               </Link>
             )}
@@ -112,28 +126,58 @@ const Navbar = () => {
             {user ? (
               <div className="flex items-center space-x-2 ml-2">
                 <Link to="/dashboard" className="text-purple-400 hover:text-purple-300 px-3 py-2 text-sm">Dashboard</Link>
-                <button onClick={logout} className="text-gray-400 hover:text-white text-sm">Logout</button>
+                <button onClick={logout} className="text-gray-400 hover:text-white text-sm px-3 py-2">Logout</button>
               </div>
             ) : (
               <Link to="/login" className="text-gray-300 hover:text-white px-3 py-2 text-sm">Login</Link>
             )}
           </div>
 
-          <button className="md:hidden text-gray-300" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
+          {/* Mobile Menu Button */}
+          <button 
+            className="lg:hidden text-gray-300 p-2 rounded-lg hover:bg-gray-800 transition-colors" 
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Toggle menu"
+          >
+            {mobileMenuOpen ? (
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            ) : (
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            )}
           </button>
         </div>
         
+        {/* Mobile Navigation Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden pb-4 space-y-2">
-            <Link to="/" className="block text-gray-300 hover:text-purple-400 px-3 py-2">Home</Link>
-            <Link to="/sightings" className="block text-gray-300 hover:text-purple-400 px-3 py-2">Sightings</Link>
-            <Link to="/hauntings" className="block text-gray-300 hover:text-purple-400 px-3 py-2">Hauntings</Link>
-            <Link to="/investigators" className="block text-gray-300 hover:text-purple-400 px-3 py-2">Investigators</Link>
-            <Link to="/equipment" className="block text-gray-300 hover:text-purple-400 px-3 py-2">Equipment</Link>
-            <Link to="/pricing" className="block text-purple-400 hover:text-purple-300 px-3 py-2">Subscribe</Link>
+          <div className="lg:hidden pb-4 space-y-1 animate-fadeIn border-t border-gray-800 pt-3 mt-2">
+            <Link to="/" onClick={closeMobileMenu} className="block text-gray-300 hover:text-purple-400 hover:bg-gray-800/50 px-4 py-3 rounded-lg transition-colors">🏠 Home</Link>
+            <Link to="/sightings" onClick={closeMobileMenu} className="block text-gray-300 hover:text-purple-400 hover:bg-gray-800/50 px-4 py-3 rounded-lg transition-colors">👁️ Sightings</Link>
+            <Link to="/hauntings" onClick={closeMobileMenu} className="block text-gray-300 hover:text-purple-400 hover:bg-gray-800/50 px-4 py-3 rounded-lg transition-colors">🏚️ Hauntings</Link>
+            <Link to="/investigators" onClick={closeMobileMenu} className="block text-gray-300 hover:text-purple-400 hover:bg-gray-800/50 px-4 py-3 rounded-lg transition-colors">🔍 Investigators</Link>
+            <Link to="/equipment" onClick={closeMobileMenu} className="block text-gray-300 hover:text-purple-400 hover:bg-gray-800/50 px-4 py-3 rounded-lg transition-colors">🛠️ Equipment</Link>
+            <Link to="/ai-report" onClick={closeMobileMenu} className="block text-gray-300 hover:text-purple-400 hover:bg-gray-800/50 px-4 py-3 rounded-lg transition-colors">🤖 AI Report</Link>
+            <Link to="/map" onClick={closeMobileMenu} className="block text-gray-300 hover:text-purple-400 hover:bg-gray-800/50 px-4 py-3 rounded-lg transition-colors">🗺️ Map</Link>
+            <Link to="/advertise" onClick={closeMobileMenu} className="block text-yellow-400 hover:text-yellow-300 hover:bg-gray-800/50 px-4 py-3 rounded-lg transition-colors">📺 Advertise</Link>
+            
+            <div className="border-t border-gray-800 pt-3 mt-3 space-y-1">
+              {!isSubscriber && (
+                <Link to="/pricing" onClick={closeMobileMenu} className="block bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-3 rounded-lg text-center font-semibold">
+                  Subscribe - £9.99/mo
+                </Link>
+              )}
+              {user ? (
+                <>
+                  <Link to="/dashboard" onClick={closeMobileMenu} className="block text-purple-400 hover:bg-gray-800/50 px-4 py-3 rounded-lg">📊 Dashboard</Link>
+                  <button onClick={() => { logout(); closeMobileMenu(); }} className="block w-full text-left text-red-400 hover:bg-gray-800/50 px-4 py-3 rounded-lg">🚪 Logout</button>
+                </>
+              ) : (
+                <Link to="/login" onClick={closeMobileMenu} className="block text-gray-300 hover:bg-gray-800/50 px-4 py-3 rounded-lg">🔐 Login</Link>
+              )}
+            </div>
           </div>
         )}
       </div>
