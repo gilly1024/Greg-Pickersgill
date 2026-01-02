@@ -1091,13 +1091,48 @@ async def get_revenue_stats():
 async def get_ad_pricing():
     return {
         "plans": [
-            {"id": "weekly", "name": "Weekly", "price_gbp": 50, "price_pence": 5000, "duration_days": 7},
-            {"id": "monthly", "name": "Monthly", "price_gbp": 150, "price_pence": 15000, "duration_days": 30},
-            {"id": "quarterly", "name": "Quarterly", "price_gbp": 350, "price_pence": 35000, "duration_days": 90}
+            {
+                "id": "weekly_intro", 
+                "name": "Weekly (Introductory)", 
+                "price_gbp": 20, 
+                "price_pence": 2000, 
+                "duration_days": 7,
+                "description": "First 3 months - special launch rate!",
+                "is_intro": True
+            },
+            {
+                "id": "weekly_standard", 
+                "name": "Weekly (Standard)", 
+                "price_gbp": 50, 
+                "price_pence": 5000, 
+                "duration_days": 7,
+                "description": "Standard rate after introductory period",
+                "is_intro": False
+            },
+            {
+                "id": "monthly_intro", 
+                "name": "Monthly (Introductory)", 
+                "price_gbp": 80, 
+                "price_pence": 8000, 
+                "duration_days": 30,
+                "description": "First 3 months - save £80 vs weekly!",
+                "is_intro": True
+            },
+            {
+                "id": "monthly_standard", 
+                "name": "Monthly (Standard)", 
+                "price_gbp": 200, 
+                "price_pence": 20000, 
+                "duration_days": 30,
+                "description": "Standard rate after introductory period",
+                "is_intro": False
+            }
         ],
         "categories": AD_CATEGORIES,
         "max_video_duration_seconds": 20,
-        "supported_formats": ["mp4", "webm", "mov"]
+        "supported_formats": ["mp4", "webm", "mov"],
+        "intro_period_months": 3,
+        "intro_offer": "£20/week for the first 3 months, then £50/week thereafter"
     }
 
 @api_router.post("/ads", response_model=VideoAd)
@@ -1105,9 +1140,18 @@ async def create_video_ad(ad_data: VideoAdCreate):
     if ad_data.category not in AD_CATEGORIES:
         raise HTTPException(status_code=400, detail="Invalid category")
     
-    # Calculate duration
-    duration_days = {"weekly": 7, "monthly": 30, "quarterly": 90}.get(ad_data.plan, 30)
-    amount = VIDEO_AD_PRICES.get(ad_data.plan, 15000)
+    # Calculate duration and pricing
+    plan_config = {
+        "weekly_intro": {"days": 7, "amount": 2000},
+        "weekly_standard": {"days": 7, "amount": 5000},
+        "monthly_intro": {"days": 30, "amount": 8000},
+        "monthly_standard": {"days": 30, "amount": 20000}
+    }
+    
+    config = plan_config.get(ad_data.plan, {"days": 7, "amount": 2000})
+    duration_days = config["days"]
+    amount = config["amount"]
+    
     start_date = datetime.now(timezone.utc)
     end_date = start_date + timedelta(days=duration_days)
     
